@@ -4,6 +4,8 @@ Portainer Community Edition web UI for managing local Docker resources.
 
 ## 🚀 Quick Start
 
+Run `./create-network.sh` from the repository root once to prepare the shared Docker network.
+
 ```bash
 # Start
 docker compose up -d

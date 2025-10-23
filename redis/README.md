@@ -4,6 +4,8 @@ In-memory data store for BullMQ job queues and caching.
 
 ## 🚀 Quick Start
 
+Run `./create-network.sh` from the repository root once to prepare the shared Docker network.
+
 ```bash
 # Start
 docker compose up -d

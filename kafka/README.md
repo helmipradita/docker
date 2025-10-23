@@ -4,6 +4,8 @@ Apache Kafka event streaming platform with web-based UI.
 
 ## 🚀 Quick Start
 
+Run `./create-network.sh` from the repository root once to prepare the shared Docker network.
+
 ```bash
 # Start (includes Zookeeper, Kafka, Kafka UI)
 docker compose up -d

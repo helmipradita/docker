@@ -4,6 +4,8 @@ RedisInsight adalah Redis GUI official dari Redis Labs untuk monitoring dan mana
 
 ## 🚀 Quick Start
 
+Run `./create-network.sh` from the repository root once to prepare the shared Docker network.
+
 ### 1. Setup Environment
 ```bash
 # Environment variables are loaded from main .env file (../../.env)
