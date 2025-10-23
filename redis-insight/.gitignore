@@ -1,0 +1,4 @@
+# Docker volumes (local data)
+data/
+
+# Note: .env is in project root (../../.env), not here

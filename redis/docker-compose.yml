@@ -1,0 +1,26 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --requirepass "Password123!" --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - local-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a 'Password123!' ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  local-dev-network:
+    name: local-dev-network
+    driver: bridge

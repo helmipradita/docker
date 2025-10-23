@@ -1,0 +1,28 @@
+services:
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis-insight
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis-insight-data:/data
+    environment:
+      - RITRUSTEDORIGINS=http://localhost:5540
+    networks:
+      - local-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:5540/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  redis-insight-data:
+    driver: local
+
+networks:
+  local-dev-network:
+    name: local-dev-network
+    driver: bridge
