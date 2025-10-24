@@ -8,13 +8,10 @@ Error: Could not connect to assa_redis_container:6379
 ```
 
 **Root Cause:**
-- Redis container was in `redis_default` network
-- RedisInsight was in default `bridge` network
 - Containers in different networks cannot communicate
 
 ### ✅ Solution Applied
-- **Changed RedisInsight network to `redis_default`**
-- Now both containers are in the same Docker network
+- **Both containers are in `local-dev-network`**
 - They can communicate using container names
 
 ---
@@ -36,12 +33,12 @@ http://localhost:5540
 ┌─────────────────────────────────────────┐
 │ Connection Details                      │
 ├─────────────────────────────────────────┤
-│ Host:     default_redis_container       │
+│ Host:     redis                         │
 │ Port:     6379                          │
 │ Username: (leave empty)                 │
-│ Password: assa_redis_password           │
+│ Password: Password123!                  │
 │ Database: 0                             │
-│ Alias:    SC-API Development            │
+│ Alias:    Local Redis Development      │
 └─────────────────────────────────────────┘
 ```
 
@@ -62,17 +59,16 @@ http://localhost:5540
 │                  Docker Host                             │
 │                                                          │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │        redis_default network (172.23.0.0/16)      │  │
+│  │        local-dev-network                          │  │
 │  │                                                    │  │
 │  │  ┌──────────────────────┐  ┌──────────────────┐  │  │
 │  │  │  Redis Container     │  │  RedisInsight    │  │  │
 │  │  │                      │  │  Container       │  │  │
-│  │  │  Name:               │  │                  │  │  │
-│  │  │  default_redis_      │  │  Name:           │  │  │
-│  │  │  container           │  │  redis-insight   │  │  │
-│  │  │                      │  │                  │  │  │
-│  │  │  IP: 172.23.0.2      │◄─┤  IP: 172.23.0.3  │  │  │
-│  │  │  Port: 6379          │  │  Port: 5540      │  │  │
+│  │  │  Name: redis         │  │  Name:           │  │  │
+│  │  │                      │  │  redis-insight   │  │  │
+│  │  │  Port: 6379          │◄─┤  Port: 5540      │  │  │
+│  │  │  Password:           │  │                  │  │  │
+│  │  │  Password123!        │  │                  │  │  │
 │  │  └──────────────────────┘  └──────────────────┘  │  │
 │  │         ▲                          ▲             │  │
 │  └─────────┼──────────────────────────┼─────────────┘  │
@@ -97,30 +93,26 @@ docker ps | grep redis
 
 Expected output:
 ```
-default_redis_container   redis:7-alpine              Up X minutes   0.0.0.0:6379->6379/tcp
+redis                    redis:7-alpine              Up X minutes   0.0.0.0:6379->6379/tcp
 redis-insight            redis/redisinsight:latest   Up X minutes   0.0.0.0:5540->5540/tcp
 ```
 
 ### Check Network Configuration
 ```bash
-# Check Redis network
-docker inspect default_redis_container --format='{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}'
-
-# Check RedisInsight network
-docker inspect redis-insight --format='{{range .NetworkSettings.Networks}}{{.NetworkID}}{{end}}'
+# Check both containers are in local-dev-network
+docker network inspect local-dev-network --format='{{range .Containers}}{{.Name}}{{"\n"}}{{end}}' | grep -E "(redis|redis-insight)"
 ```
 
-Both should return the same Network ID (redis_default).
+Should show both containers.
 
-### List Containers in Network
+### Test Redis Connection
 ```bash
-docker network inspect redis_default --format='{{range .Containers}}{{.Name}}: {{.IPv4Address}}{{"\n"}}{{end}}'
+docker exec redis redis-cli -a Password123! ping
 ```
 
 Expected output:
 ```
-default_redis_container: 172.23.0.2/16
-redis-insight: 172.23.0.3/16
+PONG
 ```
 
 ---
@@ -131,45 +123,38 @@ redis-insight: 172.23.0.3/16
 
 **Check 1: Verify same network**
 ```bash
-docker inspect default_redis_container -f '{{json .NetworkSettings.Networks}}' | grep redis_default
-docker inspect redis-insight -f '{{json .NetworkSettings.Networks}}' | grep redis_default
+docker network inspect local-dev-network --format='{{range .Containers}}{{.Name}}{{"\n"}}{{end}}' | grep -E "(redis|redis-insight)"
 ```
 
-Both should contain `redis_default`.
+Both should be listed.
 
 **Check 2: Check Redis password**
 ```bash
-# From host
-docker exec default_redis_container redis-cli -a assa_redis_password ping
+docker exec redis redis-cli -a Password123! ping
 ```
 
 Should return: `PONG`
 
 **Check 3: Restart both containers**
 ```bash
-# Restart Redis
-cd docker/redis
-docker compose restart
-
-# Restart RedisInsight
-cd docker/redis-insight
-docker compose restart
+cd redis && docker compose restart
+cd ../redis-insight && docker compose restart
 ```
 
 ### Issue 2: Wrong Password Error
 
-**Verify password in .env:**
+**The password is hardcoded in redis/docker-compose.yml:**
 ```bash
-grep REDIS_PASSWORD .env
+grep "requirepass" redis/docker-compose.yml
 ```
 
-Should match what you enter in RedisInsight.
+Should show: `Password123!`
 
 ### Issue 3: Connection Timeout
 
 **Check if Redis is listening:**
 ```bash
-docker exec default_redis_container redis-cli -a assa_redis_password info server | grep tcp_port
+docker exec redis redis-cli -a Password123! info server | grep tcp_port
 ```
 
 Should show: `tcp_port:6379`
@@ -180,26 +165,19 @@ Should show: `tcp_port:6379`
 
 ### Option 1: Container Name (✅ RECOMMENDED)
 ```
-Host: default_redis_container
+Host: redis
 ```
 - **Pros:** Easy to remember, survives IP changes
 - **Cons:** Only works within same Docker network
-- **Use Case:** Production-ready, recommended
+- **Use Case:** Recommended for container-to-container communication
 
-### Option 2: Container IP
-```
-Host: 172.23.0.2
-```
-- **Pros:** Direct connection
-- **Cons:** IP might change on restart
-- **Use Case:** Debugging
-
-### Option 3: localhost (❌ DOESN'T WORK)
+### Option 2: localhost (❌ DOESN'T WORK from RedisInsight)
 ```
 Host: localhost
 ```
-- **Why it fails:** localhost inside container = container itself
-- **Not the host machine!**
+- **Why it fails:** localhost inside RedisInsight container = RedisInsight itself
+- **Not the Redis container!**
+- **Only works:** From host machine applications
 
 ---
 
@@ -210,33 +188,32 @@ Host: localhost
 ┌────────────────────────────────┐
 │ Redis Connection               │
 ├────────────────────────────────┤
-│ Host:     default_redis_       │
-│           container             │
+│ Host:     redis                │
 │ Port:     6379                 │
-│ Password: assa_redis_password  │
+│ Password: Password123!         │
 │ Database: 0                    │
 └────────────────────────────────┘
 ```
 
-### For Your Application (.env):
+### For Your Application:
 ```env
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=assa_redis_password
+REDIS_PASSWORD=Password123!
 ```
 
 **Why different?**
 - Application runs on **host** → uses `localhost`
-- RedisInsight runs in **Docker** → uses container name
+- RedisInsight runs in **Docker** → uses container name `redis`
 
 ---
 
 ## ✅ Success Checklist
 
 - [ ] RedisInsight accessible at http://localhost:5540
-- [ ] Both containers in `redis_default` network
+- [ ] Both containers in `local-dev-network`
 - [ ] Connection test shows "Successfully connected"
-- [ ] Can browse keys (try pattern: `sc-api:*`)
+- [ ] Can browse keys
 - [ ] Can view key values
 - [ ] Can execute commands in CLI
 
@@ -246,30 +223,26 @@ REDIS_PASSWORD=assa_redis_password
 
 After successful connection:
 
-1. **Browse Session Keys**
+1. **Browse Keys**
    ```
-   Pattern: sc-api:session:*
-   ```
-
-2. **View Cache Keys**
-   ```
-   Pattern: sc-api:users:*
+   Pattern: *  (all keys)
    ```
 
-3. **Try Redis CLI** (in RedisInsight)
+2. **Try Redis CLI** (in RedisInsight)
    ```redis
-   KEYS sc-api:*
-   GET sc-api:session:636:abc-123-xyz
-   TTL sc-api:session:636:abc-123-xyz
+   KEYS *
+   GET mykey
+   TTL mykey
+   SET newkey "value"
    ```
 
-4. **Analyze Memory**
+3. **Analyze Memory**
    - Go to "Analysis Tools" → "Database Analysis"
    - See memory usage by key pattern
 
-5. **Use AI Copilot**
-   - Ask: "Show me all sessions for user 636"
-   - Get natural language to Redis command translation
+4. **Use AI Copilot**
+   - Ask natural language questions
+   - Get Redis command suggestions
 
 ---
 

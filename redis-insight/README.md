@@ -4,22 +4,9 @@ RedisInsight adalah Redis GUI official dari Redis Labs untuk monitoring dan mana
 
 ## 🚀 Quick Start
 
-Run `./create-network.sh` from the repository root once to prepare the shared Docker network.
+Run `../create-network.sh` from the repository root once to prepare the shared Docker network.
 
-### 1. Setup Environment
-```bash
-# Environment variables are loaded from main .env file (../../.env)
-# Make sure you have .env in project root:
-cd /path/to/project
-cp .env.example .env
-
-# RedisInsight configuration is in main .env:
-# REDIS_INSIGHT_PORT=5540
-# REDIS_INSIGHT_CONTAINER_NAME=redis-insight
-# REDIS_INSIGHT_TRUSTED_ORIGINS=http://localhost:5540,http://localhost:2001
-```
-
-### 2. Start RedisInsight
+### Start RedisInsight
 ```bash
 # Start container
 docker compose up -d
@@ -31,12 +18,12 @@ docker compose logs -f
 docker compose ps
 ```
 
-### 3. Access RedisInsight
+### Access RedisInsight
 ```
 Open browser: http://localhost:5540
 ```
 
-### 4. Connect to Your Redis
+### Connect to Your Redis
 
 **First Time Setup:**
 1. Open RedisInsight (http://localhost:5540)
@@ -45,14 +32,10 @@ Open browser: http://localhost:5540
 4. Enter connection details:
    ```
    Host: redis (container name - same Docker network)
-        OR
-        172.17.0.1 (Linux/WSL) or host.docker.internal (Mac/Windows)
-   
    Port: 6379
    Password: Password123!
-   Database Alias: Contact API Development
-   Username: (leave empty if no ACL)
-   Password: assa_redis_password (from your .env)
+   Database Alias: Local Redis Development
+   Username: (leave empty)
    ```
 5. Click "Test Connection"
 6. Click "Add Database"
@@ -128,23 +111,22 @@ docker run --rm -v redis-insight-data:/data -v $(pwd):/backup alpine tar xzf /ba
 
 ## 🔧 Configuration
 
-### Environment Variables
+All configuration is hardcoded in `docker-compose.yml`:
 
-All configuration is in the main `.env` file (project root):
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `REDIS_INSIGHT_PORT` | 5540 | Port untuk akses web UI |
-| `REDIS_INSIGHT_CONTAINER_NAME` | redis-insight | Container name |
-| `REDIS_INSIGHT_TRUSTED_ORIGINS` | http://localhost:5540 | CORS trusted origins |
+| Setting | Value | Description |
+|---------|-------|-------------|
+| Port | 5540 | Web UI port |
+| Container Name | redis-insight | Container name |
+| Trusted Origins | http://localhost:5540 | CORS origins |
 
 ### Custom Port
-```env
-# Edit main .env file (project root)
-REDIS_INSIGHT_PORT=8080
+Edit `docker-compose.yml`:
+```yaml
+ports:
+  - "8080:5540"  # Change 8080 to your preferred port
 ```
 
-Then access at: http://localhost:8080
+Then restart: `docker compose down && docker compose up -d`
 
 ---
 
@@ -156,42 +138,28 @@ Then access at: http://localhost:8080
 
 **Solutions:**
 
-**For Mac/Windows Docker Desktop:**
+**Use Container Name (Recommended):**
+```
+Host: redis
+Port: 6379
+Password: Password123!
+```
+Both RedisInsight and Redis are in the same `local-dev-network`.
+
+**Alternative - Using Host IP:**
+
+For Mac/Windows Docker Desktop:
 ```
 Host: host.docker.internal
 Port: 6379
-Password: assa_redis_password
+Password: Password123!
 ```
 
-**For Linux Native Docker:**
-```bash
-# Find Docker bridge IP
-docker network inspect bridge | grep Gateway
-
-# Use that IP (usually 172.17.0.1)
+For Linux/WSL:
+```
 Host: 172.17.0.1
 Port: 6379
-Password: assa_redis_password
-```
-
-**If Redis is also in Docker:**
-```bash
-# Create shared network
-docker network create redis-network
-
-# Add network to both containers
-# In redis docker-compose:
-networks:
-  - redis-network
-
-# In redis-insight docker-compose:
-networks:
-  - redis-network
-
-# Then use container name as host
-Host: assa_redis_container
-Port: 6379
-Password: assa_redis_password
+Password: Password123!
 ```
 
 ### 2. Port 5540 already in use
@@ -201,8 +169,8 @@ Password: assa_redis_password
 # Check what's using port
 sudo lsof -i :5540
 
-# Change port in .env
-REDIS_INSIGHT_PORT=8080
+# Change port in docker-compose.yml
+# Edit ports section: "8080:5540"
 
 # Restart
 docker compose down && docker compose up -d
@@ -306,57 +274,48 @@ open http://localhost:5540
 
 ## ⚙️ Integration with Project
 
-Your Redis configuration (from .env):
+Redis connection details for your application:
+```
+Host: localhost
+Port: 6379
+Password: Password123!
+```
+
+Example application configuration:
 ```env
 REDIS_HOST=localhost
 REDIS_PORT=6379
-REDIS_PASSWORD=assa_redis_password
-REDIS_KEY_PREFIX=sc-api:
+REDIS_PASSWORD=Password123!
 ```
-
-In RedisInsight, you'll see keys like:
-- `sc-api:session:{userId}:{sessionId}` - User sessions
-- `sc-api:users:admin:list` - Cached admin list
-- `sc-api:users:admin:detail:{id}` - Cached admin details
-- `sc-api:users:user:list` - Cached user list
-- `sc-api:users:pic:list` - Cached PIC list
 
 ---
 
 ## 🎯 Quick Reference
 
-### Connection Details (Linux - WSL2)
+### Connection Details
 ```
-Host: 172.17.0.1
+Host: redis (from Docker network) or localhost (from host)
 Port: 6379
-Password: assa_redis_password
+Password: Password123!
 Database: 0
-Alias: SC-API Development
-```
-
-### Common Key Patterns
-```
-sc-api:session:*                    # All sessions
-sc-api:session:636:*                # Sessions for user 636
-sc-api:users:admin:list             # Admin list cache
-sc-api:users:admin:detail:*         # Admin details cache
+Alias: Local Redis Development
 ```
 
 ### Useful Redis Commands (CLI in RedisInsight)
 ```bash
-# Count sessions for user
-KEYS sc-api:session:636:*
+# List all keys
+KEYS *
 
-# Get session data
-GET sc-api:session:636:abc-123-xyz
+# Get key value
+GET mykey
 
 # Check TTL
-TTL sc-api:session:636:abc-123-xyz
+TTL mykey
 
-# Delete all sessions for user
-DEL sc-api:session:636:*
+# Delete key
+DEL mykey
 
-# Clear all cache
+# Clear all data
 FLUSHDB
 ```
 
@@ -364,8 +323,7 @@ FLUSHDB
 
 ## 🚀 Next Steps
 
-1. ✅ Copy `.env.example` to `.env`
-2. ✅ Run `docker compose up -d`
-3. ✅ Open http://localhost:5540
-4. ✅ Add your Redis connection
-5. ✅ Start exploring your data!
+1. ✅ Run `docker compose up -d`
+2. ✅ Open http://localhost:5540
+3. ✅ Add your Redis connection (host: redis, password: Password123!)
+4. ✅ Start exploring your data!

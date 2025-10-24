@@ -2,31 +2,30 @@
 
 ## ✅ What Was Fixed
 
-### 1. **Network Configuration Fixed**
-- **Before:** Used default bridge network (isolated from Redis)
-- **After:** Connected to `redis_default` network (same as Redis container)
-- **Result:** ✅ RedisInsight can now connect to Redis container
+### 1. **Network Configuration**
+- Connected to `local-dev-network` (same as Redis container)
+- ✅ RedisInsight can connect to Redis using container name
 
-### 2. **Environment Configuration Unified**
-- **Before:** Separate `.env` file in `docker/redis-insight/`
-- **After:** Uses main `.env` from project root
-- **Result:** ✅ Single source of truth for all config
+### 2. **Configuration**
+- All settings hardcoded in `docker-compose.yml`
+- ✅ Easy to read and modify directly
 
 ---
 
 ## 📁 Current Structure
 
 ```
-project-root/
-├── .env                          # Main config (used by RedisInsight)
-├── .env.example                  # Template with RedisInsight vars
-└── docker/
-    └── redis-insight/
-        ├── docker-compose.yml    # Loads ../../.env
-        ├── start.sh             # Quick start script
-        ├── README.md            # Full documentation
-        ├── SETUP.md            # This file
-        └── .gitignore
+DOCKER/
+├── redis-insight/
+│   ├── docker-compose.yml    # All settings hardcoded
+│   ├── start.sh              # Quick start script
+│   ├── README.md             # Full documentation
+│   ├── SETUP.md              # This file
+│   ├── CONNECTION_GUIDE.md   # Connection guide
+│   └── .gitignore
+├── redis/
+│   └── docker-compose.yml    # Redis server
+└── create-network.sh         # Network setup
 ```
 
 ---
@@ -52,13 +51,16 @@ Open: http://localhost:5540
 
 ---
 
-## 🔧 Configuration (in main .env)
+## 🔧 Configuration
 
-```env
-# RedisInsight Configuration
-REDIS_INSIGHT_PORT=5540
-REDIS_INSIGHT_CONTAINER_NAME=redis-insight
-REDIS_INSIGHT_TRUSTED_ORIGINS=http://localhost:5540,http://localhost:2001
+All settings in `docker-compose.yml`:
+
+```yaml
+ports:
+  - "5540:5540"              # Web UI port
+container_name: redis-insight
+environment:
+  - RITRUSTEDORIGINS=http://localhost:5540
 ```
 
 ---
@@ -68,35 +70,28 @@ REDIS_INSIGHT_TRUSTED_ORIGINS=http://localhost:5540,http://localhost:2001
 When adding database in RedisInsight UI:
 
 ```
-Host: default_redis_container
+Host: redis
 Port: 6379
-Password: assa_redis_password
+Password: Password123!
 Database: 0
-Alias: SC-API Development
+Alias: Local Redis Development
 ```
 
 **Why use container name?**
-- RedisInsight and Redis are in the same Docker network (`redis_default`)
+- RedisInsight and Redis are in the same Docker network (`local-dev-network`)
 - Docker's internal DNS resolves container names to IPs
 - Both containers can communicate directly
 
 ---
 
-## 📊 What You'll See
+## 📊 What You Can Do
 
-### Keys in Redis:
-- `sc-api:session:{userId}:{sessionId}` - User sessions
-- `sc-api:users:admin:list` - Admin list cache
-- `sc-api:users:admin:detail:{id}` - Admin detail cache
-- `sc-api:users:user:list` - User list cache
-- `sc-api:users:pic:list` - PIC list cache
-
-### Search Patterns:
-```
-sc-api:session:*          # All sessions
-sc-api:session:636:*      # Sessions for user ID 636
-sc-api:users:*            # All cache keys
-```
+- Browse all Redis keys in your database
+- View and edit key values
+- Monitor real-time metrics
+- Search keys with patterns
+- Analyze memory usage
+- Use built-in Redis CLI
 
 ---
 
@@ -183,9 +178,9 @@ docker compose config
 
 **Solution 1:** Use container name (both in same network)
 ```
-Host: default_redis_container
+Host: redis
 Port: 6379
-Password: assa_redis_password
+Password: Password123!
 ```
 
 **Solution 2:** Check Redis is running
@@ -198,15 +193,16 @@ docker ps | grep redis
 ```bash
 docker exec -it redis-insight sh
 # Inside container:
-ping default_redis_container
+ping redis
 # Should get response if network is correct
 ```
 
 ### Issue: Port 5540 already in use
 
-**Solution:** Change port in main .env
-```env
-REDIS_INSIGHT_PORT=8080
+**Solution:** Change port in `docker-compose.yml`
+```yaml
+ports:
+  - "8080:5540"  # Change host port to 8080
 ```
 
 Then restart:
