@@ -1,0 +1,33 @@
+services:
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
+    restart: unless-stopped
+    ports:
+      - "3232:3000"
+    volumes:
+      - waha-sessions:/app/.sessions
+    environment:
+      # Set fixed credentials (recommended untuk development)
+      # Jika tidak diset, WAHA akan generate random password setiap restart
+      - WAHA_API_KEY=waha-secret-key-change-this-for-production
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=admin123
+      - WAHA_LOG_LEVEL=info
+    networks:
+      - local-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  waha-sessions:
+    driver: local
+
+networks:
+  local-dev-network:
+    external: true
+    name: local-dev-network
