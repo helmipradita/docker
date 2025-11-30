@@ -1,22 +1,20 @@
 services:
   portainer:
-    image: portainer/portainer-ce:latest
     container_name: portainer
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9443:9443"
+    image: portainer/portainer-ce:lts
+    restart: always
     volumes:
-      - portainer-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - local-dev-network
+      - portainer_data:/data
+    ports:
+      - 9443:9443
+      - 8000:8000  # Remove if you do not intend to use Edge Agents
 
 volumes:
-  portainer-data:
-    driver: local
+  portainer_data:
+    name: portainer_data
 
 networks:
-  local-dev-network:
+  default:
     external: true
-    # name: local-dev-network  # boleh dihapus, defaultnya sama dengan key di atas
+    name: local-dev-network
