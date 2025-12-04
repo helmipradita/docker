@@ -1,22 +1,22 @@
 services:
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ee:2.33.5
     container_name: portainer
     restart: unless-stopped
+    environment:
+      - TZ=Asia/Jakarta
     ports:
       - "9000:9000"
       - "9443:9443"
+      - "8000:8000"
     volumes:
       - portainer-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - local-dev-network
-    security_opt:
-      - no-new-privileges:true
 
 volumes:
   portainer-data:
-    driver: local
 
 networks:
   local-dev-network:
