@@ -18,6 +18,6 @@ volumes:
   portainer-data:
 
 networks:
-  default:
+  local-dev-network:
     external: true
     name: local-dev-network
