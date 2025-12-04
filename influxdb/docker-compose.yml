@@ -1,0 +1,28 @@
+services:
+  influxdb:
+    image: influxdb:2.7.5 # pin versi, jangan latest
+    container_name: influxdb
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Jakarta
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password123 # ganti
+      - DOCKER_INFLUXDB_INIT_ORG=local-dev
+      - DOCKER_INFLUXDB_INIT_BUCKET=default
+      - DOCKER_INFLUXDB_INIT_RETENTION=30d
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=influxdb-admin-token-123 # ganti
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    networks:
+      - local-dev-network # sama dengan postgres/grafana/portainer kamu
+
+volumes:
+  influxdb-data:
+
+networks:
+  local-dev-network:
+    external: true
+    name: local-dev-network
