@@ -1,0 +1,23 @@
+services:
+  grafana:
+    image: grafana/grafana:11.1.0   # pin versi, jangan latest
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Jakarta
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password123   # ganti
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - local-dev-network    # sama dengan postgres/prometheus/loki kamu nanti
+
+volumes:
+  grafana-data:
+
+networks:
+  local-dev-network:
+    external: true
+    name: local-dev-network
