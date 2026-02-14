@@ -1,0 +1,17 @@
+services:
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter
+    restart: unless-stopped
+    environment:
+      # connect ke Postgres laptop (container "postgres")
+      DATA_SOURCE_NAME: "postgresql://exporter:exporter_secret_change_me@postgres:5432/belajar_typescript_restful_api?sslmode=disable"
+    ports:
+      - "9187:9187"     # penting: biar bisa diakses dari VM via Tailscale
+    networks:
+      - local-dev-network
+
+networks:
+  local-dev-network:
+    external: true
+    name: local-dev-network
